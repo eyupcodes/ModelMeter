@@ -1,0 +1,41 @@
+{
+  "providers": [
+    {
+      "name": "openai-gpt4o-mini",
+      "kind": "openai-compatible",
+      "base_url": "https://api.openai.com/v1",
+      "model": "gpt-4o-mini",
+      "api_key_env": "OPENAI_API_KEY",
+      "input_cost_per_1m": 0.15,
+      "output_cost_per_1m": 0.60,
+      "timeout_seconds": 30.0
+    },
+    {
+      "name": "groq-llama-3.3-70b",
+      "kind": "openai-compatible",
+      "base_url": "https://api.groq.com/openai/v1",
+      "model": "llama-3.3-70b-versatile",
+      "api_key_env": "GROQ_API_KEY",
+      "input_cost_per_1m": 0.59,
+      "output_cost_per_1m": 0.79,
+      "timeout_seconds": 30.0
+    },
+    {
+      "name": "mistral-small",
+      "kind": "openai-compatible",
+      "base_url": "https://api.mistral.ai/v1",
+      "model": "mistral-small-latest",
+      "api_key_env": "MISTRAL_API_KEY",
+      "input_cost_per_1m": 0.20,
+      "output_cost_per_1m": 0.60,
+      "timeout_seconds": 30.0
+    }
+  ],
+  "dataset": "tasks.example.jsonl",
+  "weights": {
+    "quality": 0.5,
+    "latency": 0.3,
+    "cost": 0.2
+  },
+  "repeats": 1
+}

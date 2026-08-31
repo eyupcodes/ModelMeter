@@ -1,0 +1,5 @@
+{"id": "math-1", "prompt": "What is 17 multiplied by 6? Answer with just the number.", "expected": "102"}
+{"id": "geo-1", "prompt": "What is the capital city of Japan? Answer with just the city name.", "expected": "Tokyo"}
+{"id": "code-1", "prompt": "Write a Python one-liner function named `double` that multiplies its argument `x` by 2.", "expected": "lambda x: x * 2"}
+{"id": "logic-1", "prompt": "If all roses are flowers and some flowers fade quickly, can we conclude that all roses fade quickly? Answer Yes or No.", "expected": "No"}
+{"id": "json-1", "prompt": "Format the following user into valid JSON: name Alice, age 30. Output only JSON.", "expected": "{\"name\": \"Alice\", \"age\": 30}"}
