@@ -113,7 +113,9 @@ def run(
         dataset_path = config.parent / dataset_path
 
     if not dataset_path.is_file():
-        typer.secho(f"error: dataset file not found: {dataset_path}", fg=typer.colors.RED)
+        typer.secho(
+            f"error: dataset file not found: {dataset_path}", fg=typer.colors.RED
+        )
         raise typer.Exit(code=1)
 
     try:

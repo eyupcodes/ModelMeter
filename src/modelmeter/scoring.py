@@ -74,9 +74,7 @@ def aggregate_provider_results(
     successful_calls = len(successes)
     failure_rate = len(failures) / total
 
-    avg_quality = (
-        sum(r.quality for r in results) / total if total > 0 else 0.0
-    )
+    avg_quality = sum(r.quality for r in results) / total if total > 0 else 0.0
 
     latencies = [r.latency_ms for r in successes]
     p50_lat = percentile(latencies, 50)
