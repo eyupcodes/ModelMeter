@@ -6,10 +6,10 @@ and summary aggregation across all configured models.
 
 from __future__ import annotations
 
-from typing import Callable, List, Optional
+from collections.abc import Callable
 
-from modelmeter.config import BenchmarkConfig, ProviderConfig, Task
-from modelmeter.providers import BaseProvider, get_provider_adapter
+from modelmeter.config import BenchmarkConfig, Task
+from modelmeter.providers import get_provider_adapter
 from modelmeter.scoring import (
     CallResult,
     ProviderSummary,
@@ -18,7 +18,7 @@ from modelmeter.scoring import (
 )
 
 
-def evaluate_quality(actual: str, expected: Optional[str]) -> float:
+def evaluate_quality(actual: str, expected: str | None) -> float:
     """Deterministic quality evaluation for a single answer.
 
     - If no expected answer is set, return 1.0 (prompt succeeded).
@@ -47,23 +47,23 @@ def calculate_cost(
 
 def run_benchmark(
     config: BenchmarkConfig,
-    tasks: List[Task],
-    on_progress: Optional[Callable[[str, int, int], None]] = None,
-) -> List[ProviderSummary]:
+    tasks: list[Task],
+    on_progress: Callable[[str, int, int], None] | None = None,
+) -> list[ProviderSummary]:
     """Execute all tasks against all configured providers.
 
     Catches individual call failures gracefully so the benchmark continues.
     Returns ranked ProviderSummary list sorted by weighted score.
     """
-    all_summaries: List[ProviderSummary] = []
+    all_summaries: list[ProviderSummary] = []
     total_tasks = len(tasks) * config.repeats
 
     for p_cfg in config.providers:
         adapter = get_provider_adapter(p_cfg)
-        p_results: List[CallResult] = []
+        p_results: list[CallResult] = []
         completed_count = 0
 
-        for r_idx in range(config.repeats):
+        for _ in range(config.repeats):
             for task in tasks:
                 try:
                     resp = adapter.execute(task.prompt)

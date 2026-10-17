@@ -67,10 +67,14 @@ def test_run_end_to_end_with_exports(tmp_path, monkeypatch) -> None:
                 latency_ms=80.0,
             )
 
-    monkeypatch.setattr(runner_mod, "get_provider_adapter", lambda cfg: FakeProvider(cfg))
+    monkeypatch.setattr(
+        runner_mod, "get_provider_adapter", lambda cfg: FakeProvider(cfg)
+    )
 
     tasks_file = tmp_path / "tasks.jsonl"
-    tasks_file.write_text('{"id": "t1", "prompt": "2+2?", "expected": "4"}\n', encoding="utf-8")
+    tasks_file.write_text(
+        '{"id": "t1", "prompt": "2+2?", "expected": "4"}\n', encoding="utf-8"
+    )
 
     cfg_file = tmp_path / "bench.json"
     cfg_file.write_text(
@@ -88,11 +92,18 @@ def test_run_end_to_end_with_exports(tmp_path, monkeypatch) -> None:
 
     result = runner.invoke(
         app,
-        ["run", "--config", str(cfg_file), "--json", str(out_json), "--csv", str(out_csv)],
+        [
+            "run",
+            "--config",
+            str(cfg_file),
+            "--json",
+            str(out_json),
+            "--csv",
+            str(out_csv),
+        ],
     )
     assert result.exit_code == 0
     assert "Leaderboard" in result.output
     assert "mock-p1" in result.output
     assert out_json.is_file()
     assert out_csv.is_file()
-

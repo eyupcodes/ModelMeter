@@ -6,8 +6,8 @@ Pure computation — no IO, no network calls.
 from __future__ import annotations
 
 import math
-from typing import List, Optional
-from pydantic import BaseModel, Field
+
+from pydantic import BaseModel
 
 from modelmeter.config import Weights
 
@@ -23,7 +23,7 @@ class CallResult(BaseModel):
     cost: float = 0.0
     quality: float = 0.0  # 0.0 to 1.0 (exact/normalized match with expected, or 1.0 if ok and no expected)
     success: bool = True
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class ProviderSummary(BaseModel):
@@ -44,7 +44,7 @@ class ProviderSummary(BaseModel):
     weighted_score: float = 0.0  # 0.0 to 100.0
 
 
-def percentile(values: List[float], p: float) -> float:
+def percentile(values: list[float], p: float) -> float:
     """Calculate the p-th percentile (0 <= p <= 100) of a list of values."""
     if not values:
         return 0.0
@@ -61,7 +61,7 @@ def percentile(values: List[float], p: float) -> float:
 
 def aggregate_provider_results(
     provider_name: str,
-    results: List[CallResult],
+    results: list[CallResult],
 ) -> ProviderSummary:
     """Aggregate a list of CallResults for a single provider."""
     total = len(results)
@@ -74,9 +74,7 @@ def aggregate_provider_results(
     successful_calls = len(successes)
     failure_rate = len(failures) / total
 
-    avg_quality = (
-        sum(r.quality for r in results) / total if total > 0 else 0.0
-    )
+    avg_quality = sum(r.quality for r in results) / total if total > 0 else 0.0
 
     latencies = [r.latency_ms for r in successes]
     p50_lat = percentile(latencies, 50)
@@ -105,9 +103,9 @@ def aggregate_provider_results(
 
 
 def compute_weighted_scores(
-    summaries: List[ProviderSummary],
+    summaries: list[ProviderSummary],
     weights: Weights,
-) -> List[ProviderSummary]:
+) -> list[ProviderSummary]:
     """Calculate normalized weighted scores (0-100) across providers.
 
     Higher quality -> better (direct)
@@ -120,7 +118,7 @@ def compute_weighted_scores(
     max_p50 = max((s.p50_latency_ms for s in summaries), default=0.0)
     max_cost = max((s.cost_per_test for s in summaries), default=0.0)
 
-    updated: List[ProviderSummary] = []
+    updated: list[ProviderSummary] = []
     for s in summaries:
         q_score = s.avg_quality  # 0..1
 

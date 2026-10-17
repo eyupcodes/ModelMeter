@@ -5,18 +5,17 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
-from typing import List
 
 from modelmeter.scoring import ProviderSummary
 
 
-def export_json(summaries: List[ProviderSummary], path: Path) -> None:
+def export_json(summaries: list[ProviderSummary], path: Path) -> None:
     """Save summaries to a JSON file."""
     data = [s.model_dump() for s in summaries]
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
-def export_csv(summaries: List[ProviderSummary], path: Path) -> None:
+def export_csv(summaries: list[ProviderSummary], path: Path) -> None:
     """Save summaries to a CSV file."""
     if not summaries:
         path.write_text("", encoding="utf-8")

@@ -7,7 +7,7 @@ Core logic lives in the package modules it calls.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -90,10 +90,10 @@ def run(
         Path, typer.Option("--config", "-c", help="Path to benchmark config JSON.")
     ],
     export_json_path: Annotated[
-        Optional[Path], typer.Option("--json", help="Path to export results as JSON.")
+        Path | None, typer.Option("--json", help="Path to export results as JSON.")
     ] = None,
     export_csv_path: Annotated[
-        Optional[Path], typer.Option("--csv", help="Path to export results as CSV.")
+        Path | None, typer.Option("--csv", help="Path to export results as CSV.")
     ] = None,
 ) -> None:
     """Execute a benchmark across all configured providers and show leaderboard."""
@@ -113,7 +113,9 @@ def run(
         dataset_path = config.parent / dataset_path
 
     if not dataset_path.is_file():
-        typer.secho(f"error: dataset file not found: {dataset_path}", fg=typer.colors.RED)
+        typer.secho(
+            f"error: dataset file not found: {dataset_path}", fg=typer.colors.RED
+        )
         raise typer.Exit(code=1)
 
     try:

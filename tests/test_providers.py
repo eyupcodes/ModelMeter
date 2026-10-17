@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import pytest
 import httpx
+import pytest
 
 from modelmeter.config import ProviderConfig
 from modelmeter.providers import (

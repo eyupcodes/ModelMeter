@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import time
 from abc import ABC, abstractmethod
+
 import httpx
 from pydantic import BaseModel
 
