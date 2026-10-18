@@ -78,3 +78,15 @@ def test_load_benchmark_config_roundtrip(tmp_path) -> None:
 def test_load_benchmark_config_missing_file(tmp_path) -> None:
     with pytest.raises(FileNotFoundError):
         load_benchmark_config(tmp_path / "nope.json")
+
+
+def test_config_rejects_duplicate_provider_names() -> None:
+    other = {**PROVIDER, "model": "m-2"}
+    with pytest.raises(ValidationError, match="duplicate provider names: prov-a"):
+        BenchmarkConfig(providers=[PROVIDER, other], dataset="tasks.jsonl")
+
+
+def test_config_allows_distinct_provider_names() -> None:
+    other = {**PROVIDER, "name": "prov-b"}
+    cfg = BenchmarkConfig(providers=[PROVIDER, other], dataset="tasks.jsonl")
+    assert [p.name for p in cfg.providers] == ["prov-a", "prov-b"]

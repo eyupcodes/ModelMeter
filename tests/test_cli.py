@@ -107,3 +107,17 @@ def test_run_end_to_end_with_exports(tmp_path, monkeypatch) -> None:
     assert "mock-p1" in result.output
     assert out_json.is_file()
     assert out_csv.is_file()
+
+
+def test_check_rejects_duplicate_provider_names(tmp_path) -> None:
+    provider = (
+        '{"name": "p1", "base_url": "http://x", "model": "m", "api_key_env": "K"}'
+    )
+    cfg = tmp_path / "dup.json"
+    cfg.write_text(
+        f'{{"providers": [{provider}, {provider}], "dataset": "tasks.jsonl"}}',
+        encoding="utf-8",
+    )
+    result = runner.invoke(app, ["check", "--config", str(cfg)])
+    assert result.exit_code == 1
+    assert "duplicate provider names" in result.output

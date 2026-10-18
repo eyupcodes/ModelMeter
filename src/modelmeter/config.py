@@ -70,6 +70,18 @@ class BenchmarkConfig(BaseModel):
     )
     repeats: int = Field(default=1, ge=1, le=10)
 
+    @model_validator(mode="after")
+    def _unique_provider_names(self) -> BenchmarkConfig:
+        seen: set[str] = set()
+        duplicates: list[str] = []
+        for provider in self.providers:
+            if provider.name in seen and provider.name not in duplicates:
+                duplicates.append(provider.name)
+            seen.add(provider.name)
+        if duplicates:
+            raise ValueError(f"duplicate provider names: {', '.join(duplicates)}")
+        return self
+
 
 def load_benchmark_config(path: Path) -> BenchmarkConfig:
     """Parse and validate a benchmark config JSON file."""

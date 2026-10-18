@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Benchmark configs with duplicate provider names and datasets with duplicate task ids are now rejected with a clear error instead of producing ambiguous results (#8).
+
 ## [0.1.1] - 2026-10-17
 
 ### Changed

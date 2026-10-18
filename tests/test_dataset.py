@@ -63,3 +63,17 @@ def test_invalid_task_reports_line_number(tmp_path) -> None:
     )
     with pytest.raises(ValueError, match=":1:"):
         load_tasks(path)
+
+
+def test_rejects_duplicate_task_ids(tmp_path) -> None:
+    path = write_jsonl(
+        tmp_path,
+        [
+            '{"id": "t1", "prompt": "a"}',
+            "",
+            '{"id": "t2", "prompt": "b"}',
+            '{"id": "t1", "prompt": "c"}',
+        ],
+    )
+    with pytest.raises(ValueError, match=r":4: duplicate task id 't1'.*line 1"):
+        load_tasks(path)
