@@ -11,6 +11,7 @@ from typing import Annotated
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from modelmeter import __version__
@@ -55,6 +56,22 @@ def print_leaderboard(summaries: list[ProviderSummary]) -> None:
             f"[{fail_style}]{s.failure_rate * 100:.1f}%[/{fail_style}]",
         )
     console.print(table)
+
+
+def print_failure_reasons(summaries: list[ProviderSummary]) -> None:
+    """List the first error of each provider that had failed calls."""
+    failed = [s for s in summaries if s.failure_rate > 0 and s.first_error]
+    if not failed:
+        return
+    console.print()
+    console.print("[red]Failures[/]")
+    for s in failed:
+        failures = s.total_calls - s.successful_calls
+        console.print(
+            f"  [bold]{escape(s.provider_name)}[/]: {failures}/{s.total_calls} "
+            f"calls failed, first error: {escape(s.first_error or '')}",
+            soft_wrap=True,
+        )
 
 
 @app.command()
@@ -137,6 +154,7 @@ def run(
 
     console.print()
     print_leaderboard(summaries)
+    print_failure_reasons(summaries)
 
     if export_json_path:
         export_json(summaries, export_json_path)
