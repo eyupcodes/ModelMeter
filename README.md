@@ -121,6 +121,8 @@ $$\text{Score} = \left( w_q \cdot \text{Quality} + w_l \cdot \text{SpeedScore} +
 - $\text{CostScore}$: Relative cost per test ($1 - \frac{\text{cost}}{\max(\text{cost})}$).
 - $\text{FailureRate}$: Penalizes timeouts and API errors directly.
 
+When calls fail, the CLI lists the first error message of each affected provider under the leaderboard (for example a missing API key or an HTTP 401), and the JSON/CSV exports carry it in the `first_error` column.
+
 ---
 
 ## 5. CLI Commands

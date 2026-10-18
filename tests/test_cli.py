@@ -121,3 +121,31 @@ def test_check_rejects_duplicate_provider_names(tmp_path) -> None:
     result = runner.invoke(app, ["check", "--config", str(cfg)])
     assert result.exit_code == 1
     assert "duplicate provider names" in result.output
+
+
+def test_run_shows_why_calls_failed(tmp_path, monkeypatch) -> None:
+    import modelmeter.runner as runner_mod
+    from modelmeter.providers import BaseProvider, ProviderResponse
+
+    class FailingProvider(BaseProvider):
+        def execute(self, prompt: str) -> ProviderResponse:
+            raise ValueError("Missing environment variable 'K' [for p1]")
+
+    monkeypatch.setattr(
+        runner_mod, "get_provider_adapter", lambda cfg: FailingProvider(cfg)
+    )
+    (tmp_path / "tasks.jsonl").write_text(
+        '{"id": "t1", "prompt": "2+2?"}\n', encoding="utf-8"
+    )
+    cfg_file = tmp_path / "bench.json"
+    cfg_file.write_text(
+        '{"providers": [{"name": "p1", "base_url": "http://x", "model": "m", '
+        '"api_key_env": "K"}], "dataset": "tasks.jsonl"}',
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["run", "--config", str(cfg_file)])
+
+    assert result.exit_code == 0
+    assert "1/1 calls failed" in result.output
+    assert "Missing environment variable 'K' [for p1]" in result.output
