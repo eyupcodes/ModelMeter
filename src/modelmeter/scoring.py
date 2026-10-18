@@ -42,6 +42,7 @@ class ProviderSummary(BaseModel):
     total_cost: float = 0.0
     cost_per_test: float = 0.0
     weighted_score: float = 0.0  # 0.0 to 100.0
+    first_error: str | None = None  # first failure message, if any call failed
 
 
 def percentile(values: list[float], p: float) -> float:
@@ -99,6 +100,7 @@ def aggregate_provider_results(
         total_cost=round(tot_cost, 6),
         cost_per_test=round(cost_per_test, 6),
         weighted_score=0.0,
+        first_error=next((r.error for r in failures if r.error), None),
     )
 
 

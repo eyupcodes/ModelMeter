@@ -39,3 +39,15 @@ def test_export_json_and_csv(tmp_path) -> None:
     assert len(reader) == 1
     assert reader[0]["provider_name"] == "p1"
     assert float(reader[0]["weighted_score"]) == 95.5
+
+
+def test_exports_include_first_error(tmp_path) -> None:
+    summaries = [ProviderSummary(provider_name="p1", first_error="HTTP 401")]
+
+    export_json(summaries, tmp_path / "out.json")
+    export_csv(summaries, tmp_path / "out.csv")
+
+    loaded = json.loads((tmp_path / "out.json").read_text(encoding="utf-8"))
+    assert loaded[0]["first_error"] == "HTTP 401"
+    with (tmp_path / "out.csv").open(encoding="utf-8") as f:
+        assert list(csv.DictReader(f))[0]["first_error"] == "HTTP 401"

@@ -99,3 +99,35 @@ def test_compute_weighted_scores_sorting() -> None:
     assert len(ranked) == 2
     assert ranked[0].provider_name == "fast_cheap_good"
     assert ranked[0].weighted_score > ranked[1].weighted_score
+
+
+def test_aggregate_keeps_first_error_message() -> None:
+    results = [
+        CallResult(task_id="t1", provider_name="p", quality=1.0),
+        CallResult(task_id="t2", provider_name="p", success=False, error="HTTP 401"),
+        CallResult(task_id="t3", provider_name="p", success=False, error="timeout"),
+    ]
+
+    summary = aggregate_provider_results("p", results)
+
+    assert summary.first_error == "HTTP 401"
+
+
+def test_aggregate_without_failures_has_no_error() -> None:
+    summary = aggregate_provider_results(
+        "p", [CallResult(task_id="t1", provider_name="p", quality=1.0)]
+    )
+
+    assert summary.first_error is None
+
+
+def test_weighted_scores_preserve_first_error() -> None:
+    summary = aggregate_provider_results(
+        "p", [CallResult(task_id="t1", provider_name="p", success=False, error="boom")]
+    )
+
+    ranked = compute_weighted_scores(
+        [summary], Weights(quality=0.5, latency=0.3, cost=0.2)
+    )
+
+    assert ranked[0].first_error == "boom"
