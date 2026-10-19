@@ -181,3 +181,44 @@ def test_run_invalid_config(tmp_path) -> None:
     result = runner.invoke(app, ["run", "--config", str(cfg)])
     assert result.exit_code == 1
     assert "invalid config" in result.output.lower()
+
+
+def test_run_bad_export_path_fails_before_calling_providers(
+    tmp_path, monkeypatch
+) -> None:
+    import modelmeter.runner as runner_mod
+
+    def boom(cfg):
+        raise AssertionError("provider must not be called")
+
+    monkeypatch.setattr(runner_mod, "get_provider_adapter", boom)
+    (tmp_path / "tasks.jsonl").write_text('{"id": "t1", "prompt": "p"}\n')
+    cfg = str(_write_config(tmp_path))
+
+    missing_dir = tmp_path / "nope" / "out.json"
+    result = runner.invoke(app, ["run", "--config", cfg, "--json", str(missing_dir)])
+    assert result.exit_code == 1
+    assert "directory does not exist" in result.output
+
+    result = runner.invoke(app, ["run", "--config", cfg, "--csv", str(tmp_path)])
+    assert result.exit_code == 1
+    assert "is a directory" in result.output
+
+
+def test_run_export_write_error_is_reported(tmp_path, monkeypatch) -> None:
+    import modelmeter.cli as cli_mod
+
+    monkeypatch.setattr(cli_mod, "run_benchmark", lambda cfg, tasks: [])
+
+    def deny(summaries, path):
+        raise PermissionError("denied")
+
+    monkeypatch.setattr(cli_mod, "export_json", deny)
+    (tmp_path / "tasks.jsonl").write_text('{"id": "t1", "prompt": "p"}\n')
+    out = tmp_path / "out.json"
+    result = runner.invoke(
+        app,
+        ["run", "--config", str(_write_config(tmp_path)), "--json", str(out)],
+    )
+    assert result.exit_code == 1
+    assert "cannot write export" in result.output

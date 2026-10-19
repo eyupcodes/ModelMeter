@@ -101,6 +101,20 @@ def check(
     )
 
 
+def _check_export_path(path: Path | None) -> None:
+    """Exit with an error if ``path`` cannot be written, before any provider is called."""
+    if path is None:
+        return
+    if path.is_dir():
+        problem = "is a directory"
+    elif not path.parent.is_dir():
+        problem = f"directory does not exist: {path.parent}"
+    else:
+        return
+    typer.secho(f"error: cannot write export {path}: {problem}", fg=typer.colors.RED)
+    raise typer.Exit(code=1)
+
+
 @app.command()
 def run(
     config: Annotated[
@@ -117,6 +131,9 @@ def run(
     if not config.is_file():
         typer.secho(f"error: config file not found: {config}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
+
+    _check_export_path(export_json_path)
+    _check_export_path(export_csv_path)
 
     try:
         bench_cfg = load_benchmark_config(config)
@@ -156,13 +173,17 @@ def run(
     print_leaderboard(summaries)
     print_failure_reasons(summaries)
 
-    if export_json_path:
-        export_json(summaries, export_json_path)
-        console.print(f"[dim]Exported JSON -> {export_json_path}[/]")
+    try:
+        if export_json_path:
+            export_json(summaries, export_json_path)
+            console.print(f"[dim]Exported JSON -> {export_json_path}[/]")
 
-    if export_csv_path:
-        export_csv(summaries, export_csv_path)
-        console.print(f"[dim]Exported CSV -> {export_csv_path}[/]")
+        if export_csv_path:
+            export_csv(summaries, export_csv_path)
+            console.print(f"[dim]Exported CSV -> {export_csv_path}[/]")
+    except OSError as exc:
+        typer.secho(f"error: cannot write export: {exc}", fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
 
 
 if __name__ == "__main__":
