@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Providers with failed calls now show the first error message under the leaderboard, and `ProviderSummary` and the JSON/CSV exports gain a `first_error` field (#10).
 
 ### Fixed
+- `modelmeter run` checks `--json`/`--csv` paths before calling any provider and reports an unwritable export path as a one-line error with exit code 1, instead of a traceback after the benchmark has finished (#12).
 - Benchmark configs with duplicate provider names and datasets with duplicate task ids are now rejected with a clear error instead of producing ambiguous results (#8).
 
 ## [0.1.1] - 2026-10-17
