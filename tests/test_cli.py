@@ -149,3 +149,35 @@ def test_run_shows_why_calls_failed(tmp_path, monkeypatch) -> None:
     assert result.exit_code == 0
     assert "1/1 calls failed" in result.output
     assert "Missing environment variable 'K' [for p1]" in result.output
+
+
+def _write_config(tmp_path, dataset="tasks.jsonl"):
+    cfg = tmp_path / "bench.json"
+    cfg.write_text(
+        '{"providers": [{"name": "p1", "base_url": "http://x", "model": "m",'
+        f' "api_key_env": "K"}}], "dataset": "{dataset}"}}',
+        encoding="utf-8",
+    )
+    return cfg
+
+
+def test_run_empty_dataset(tmp_path) -> None:
+    (tmp_path / "tasks.jsonl").write_text("", encoding="utf-8")
+    result = runner.invoke(app, ["run", "--config", str(_write_config(tmp_path))])
+    assert result.exit_code == 1
+    assert "dataset is empty" in result.output.lower()
+
+
+def test_run_unreadable_dataset(tmp_path) -> None:
+    (tmp_path / "tasks.jsonl").write_text("not json\n", encoding="utf-8")
+    result = runner.invoke(app, ["run", "--config", str(_write_config(tmp_path))])
+    assert result.exit_code == 1
+    assert "failed loading dataset" in result.output.lower()
+
+
+def test_run_invalid_config(tmp_path) -> None:
+    cfg = tmp_path / "bench.json"
+    cfg.write_text('{"dataset": "tasks.jsonl"}', encoding="utf-8")
+    result = runner.invoke(app, ["run", "--config", str(cfg)])
+    assert result.exit_code == 1
+    assert "invalid config" in result.output.lower()
