@@ -38,6 +38,18 @@ class BaseProvider(ABC):
         raise NotImplementedError
 
 
+def _completion_text(data: object, provider_name: str) -> str:
+    """Return the first choice's text or raise if the reply has no completion."""
+    choices = data.get("choices") if isinstance(data, dict) else None
+    if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+        detail = ""
+        if isinstance(data, dict) and isinstance(data.get("error"), dict):
+            detail = f": {data['error'].get('message', data['error'])}"
+        raise ValueError(f"Provider {provider_name!r} returned no completion{detail}")
+    message = choices[0].get("message") or {}
+    return message.get("content") or ""
+
+
 class OpenAICompatibleProvider(BaseProvider):
     """Adapter for standard OpenAI /v1/chat/completions endpoints."""
 
@@ -66,12 +78,9 @@ class OpenAICompatibleProvider(BaseProvider):
             data = resp.json()
         latency_ms = (time.perf_counter() - start_time) * 1000.0
 
-        content = ""
-        if "choices" in data and len(data["choices"]) > 0:
-            msg = data["choices"][0].get("message", {})
-            content = msg.get("content", "") or ""
+        content = _completion_text(data, self.config.name)
 
-        usage = data.get("usage", {})
+        usage = data.get("usage") or {}
         in_tokens = usage.get("prompt_tokens", 0)
         out_tokens = usage.get("completion_tokens", 0)
 
