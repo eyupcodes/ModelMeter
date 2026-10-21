@@ -90,3 +90,13 @@ def test_config_allows_distinct_provider_names() -> None:
     other = {**PROVIDER, "name": "prov-b"}
     cfg = BenchmarkConfig(providers=[PROVIDER, other], dataset="tasks.jsonl")
     assert [p.name for p in cfg.providers] == ["prov-a", "prov-b"]
+
+
+def test_provider_api_key_env_is_optional() -> None:
+    provider = ProviderConfig(name="ollama", base_url="http://x/v1", model="m")
+    assert provider.api_key_env is None
+
+
+def test_provider_api_key_env_cannot_be_empty() -> None:
+    with pytest.raises(ValueError):
+        ProviderConfig(name="p", base_url="http://x/v1", model="m", api_key_env="")

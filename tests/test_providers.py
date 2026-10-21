@@ -105,3 +105,28 @@ def test_null_usage_and_content_are_tolerated(monkeypatch) -> None:
     resp = _provider(monkeypatch, body).execute("hi")
     assert resp.text == ""
     assert resp.input_tokens == resp.output_tokens == 0
+
+
+def test_provider_without_api_key_env_sends_no_authorization(monkeypatch) -> None:
+    cfg = ProviderConfig(
+        name="ollama",
+        base_url="http://localhost:11434/v1",
+        model="llama3.2",
+    )
+    seen: dict = {}
+
+    def mock_post(self, url, **kwargs):
+        seen["url"] = url
+        seen["headers"] = kwargs["headers"]
+        return httpx.Response(
+            status_code=200,
+            request=httpx.Request("POST", url),
+            json={"choices": [{"message": {"content": "ok"}}]},
+        )
+
+    monkeypatch.setattr(httpx.Client, "post", mock_post)
+    resp = get_provider_adapter(cfg).execute("hi")
+
+    assert resp.text == "ok"
+    assert seen["url"] == "http://localhost:11434/v1/chat/completions"
+    assert "Authorization" not in seen["headers"]

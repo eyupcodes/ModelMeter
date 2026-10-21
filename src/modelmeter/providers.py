@@ -54,18 +54,17 @@ class OpenAICompatibleProvider(BaseProvider):
     """Adapter for standard OpenAI /v1/chat/completions endpoints."""
 
     def execute(self, prompt: str) -> ProviderResponse:
-        api_key = os.environ.get(self.config.api_key_env)
-        if not api_key:
-            raise ValueError(
-                f"Missing environment variable {self.config.api_key_env!r} "
-                f"for provider {self.config.name!r}"
-            )
+        headers = {"Content-Type": "application/json"}
+        if self.config.api_key_env is not None:
+            api_key = os.environ.get(self.config.api_key_env)
+            if not api_key:
+                raise ValueError(
+                    f"Missing environment variable {self.config.api_key_env!r} "
+                    f"for provider {self.config.name!r}"
+                )
+            headers["Authorization"] = f"Bearer {api_key}"
 
         url = self.config.base_url.rstrip("/") + "/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
         payload = {
             "model": self.config.model,
             "messages": [{"role": "user", "content": prompt}],
