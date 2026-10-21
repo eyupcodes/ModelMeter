@@ -135,6 +135,8 @@ $$\text{Score} = \left( w_q \cdot \text{Quality} + w_l \cdot \text{SpeedScore} +
 
 When calls fail, the CLI lists the first error message of each affected provider under the leaderboard (for example a missing API key or an HTTP 401), and the JSON/CSV exports carry it in the `first_error` column.
 
+HTTP 429 (rate limit) responses are retried once. ModelMeter waits for `Retry-After` (seconds or an HTTP date), falling back to one second if the header is missing or invalid. If the requested wait exceeds 30 seconds, the call fails without retrying rather than retrying too early. A failed retry is recorded as one failed benchmark call; other HTTP errors and network failures are not retried. Successful calls include the initial request, wait, and retry in their measured latency.
+
 ---
 
 ## 5. CLI Commands

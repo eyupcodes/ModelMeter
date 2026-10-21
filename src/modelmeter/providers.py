@@ -7,9 +7,12 @@ chat completion endpoint (OpenAI, Groq, Mistral, local vLLM, etc.).
 
 from __future__ import annotations
 
+import math
 import os
 import time
 from abc import ABC, abstractmethod
+from datetime import UTC
+from email.utils import parsedate_to_datetime
 
 import httpx
 from pydantic import BaseModel
@@ -50,6 +53,23 @@ def _completion_text(data: object, provider_name: str) -> str:
     return message.get("content") or ""
 
 
+def _retry_delay(retry_after: str | None) -> float:
+    """Parse Retry-After seconds or an HTTP date, defaulting to one second."""
+    if retry_after is None:
+        return 1.0
+    try:
+        delay = float(retry_after)
+    except ValueError:
+        try:
+            retry_at = parsedate_to_datetime(retry_after)
+            if retry_at.tzinfo is None:
+                retry_at = retry_at.replace(tzinfo=UTC)
+            delay = max(0.0, retry_at.timestamp() - time.time())
+        except (ValueError, TypeError, OverflowError, OSError):
+            return 1.0
+    return delay if math.isfinite(delay) and delay >= 0 else 1.0
+
+
 class OpenAICompatibleProvider(BaseProvider):
     """Adapter for standard OpenAI /v1/chat/completions endpoints."""
 
@@ -73,6 +93,12 @@ class OpenAICompatibleProvider(BaseProvider):
         start_time = time.perf_counter()
         with httpx.Client(timeout=self.config.timeout_seconds) as client:
             resp = client.post(url, json=payload, headers=headers)
+            if resp.status_code == 429:
+                delay = _retry_delay(resp.headers.get("Retry-After"))
+                # Do not retry earlier than requested or block on a long cooldown.
+                if delay <= 30.0:
+                    time.sleep(delay)
+                    resp = client.post(url, json=payload, headers=headers)
             resp.raise_for_status()
             data = resp.json()
         latency_ms = (time.perf_counter() - start_time) * 1000.0
