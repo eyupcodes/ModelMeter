@@ -20,13 +20,17 @@ class Task(BaseModel):
 
 
 class ProviderConfig(BaseModel):
-    """Connection + pricing definition for one provider/model pair."""
+    """Connection + pricing definition for one provider/model pair.
+
+    ``api_key_env`` names the environment variable holding the API key. Leave it
+    out for endpoints that need no key, such as a local Ollama or vLLM server.
+    """
 
     name: str = Field(min_length=1)
     kind: str = Field(default="openai-compatible")
     base_url: str = Field(min_length=1)
     model: str = Field(min_length=1)
-    api_key_env: str = Field(min_length=1)
+    api_key_env: str | None = Field(default=None, min_length=1)
     input_cost_per_1m: float = Field(default=0.0, ge=0)
     output_cost_per_1m: float = Field(default=0.0, ge=0)
     timeout_seconds: float = Field(default=30.0, gt=0)

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `api_key_env` is optional in provider configs, so keyless OpenAI-compatible endpoints such as a local Ollama or vLLM server can be benchmarked; no `Authorization` header is sent without it (#16).
 - Providers with failed calls now show the first error message under the leaderboard, and `ProviderSummary` and the JSON/CSV exports gain a `first_error` field (#10).
 
 ### Fixed
