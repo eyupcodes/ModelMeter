@@ -98,6 +98,18 @@ A benchmark config is a standard JSON file (`benchmark.json`):
 }
 ```
 
+### Local providers without an API key
+
+`api_key_env` is optional. Leave it out for endpoints that need no key, such as [Ollama](https://ollama.com) (which serves an OpenAI-compatible API under `/v1`) or a local vLLM server; no `Authorization` header is sent:
+
+```json
+{
+  "name": "ollama-llama3.2",
+  "base_url": "http://localhost:11434/v1",
+  "model": "llama3.2"
+}
+```
+
 ### Task Dataset (`tasks.jsonl`)
 
 Each line is a JSON object with a prompt and an optional `expected` answer:
