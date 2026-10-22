@@ -25,6 +25,11 @@ def test_percentile_exact() -> None:
     assert percentile(vals, 100) == 50.0
 
 
+@pytest.mark.parametrize("p, expected", [(50, 150.0), (95, 195.0)])
+def test_percentile_interpolates_unsorted_values(p: float, expected: float) -> None:
+    assert percentile([200.0, 100.0], p) == pytest.approx(expected)
+
+
 def test_aggregate_empty() -> None:
     summary = aggregate_provider_results("test", [])
     assert summary.provider_name == "test"
@@ -99,6 +104,40 @@ def test_compute_weighted_scores_sorting() -> None:
     assert len(ranked) == 2
     assert ranked[0].provider_name == "fast_cheap_good"
     assert ranked[0].weighted_score > ranked[1].weighted_score
+
+
+@pytest.mark.parametrize(
+    "weights, expected_score",
+    [
+        (Weights(quality=1.0, latency=0.0, cost=0.0), 80.0),
+        (Weights(quality=0.0, latency=1.0, cost=0.0), 50.0),
+        (Weights(quality=0.0, latency=0.0, cost=1.0), 75.0),
+        (Weights(quality=0.5, latency=0.3, cost=0.2), 70.0),
+    ],
+)
+@pytest.mark.parametrize("failure_rate", [0.0, 0.25, 1.0])
+def test_compute_weighted_scores_exact_values(
+    weights: Weights, expected_score: float, failure_rate: float
+) -> None:
+    summary = ProviderSummary(
+        provider_name="candidate",
+        avg_quality=0.8,
+        p50_latency_ms=100.0,
+        cost_per_test=0.001,
+        failure_rate=failure_rate,
+    )
+    reference = ProviderSummary(
+        provider_name="reference", p50_latency_ms=200.0, cost_per_test=0.004
+    )
+    summaries = [reference, summary]
+    originals = [s.model_dump() for s in summaries]
+
+    ranked = compute_weighted_scores(summaries, weights)
+    scores = {s.provider_name: s.weighted_score for s in ranked}
+
+    assert scores["candidate"] == pytest.approx(expected_score * (1.0 - failure_rate))
+    assert scores["reference"] == 0.0
+    assert [s.model_dump() for s in summaries] == originals
 
 
 def test_aggregate_keeps_first_error_message() -> None:
