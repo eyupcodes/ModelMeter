@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Regression tests now verify exact leaderboard scores for individual and combined metric weights, partial and complete failures, and interpolated p50/p95 latencies.
 - OpenAI-compatible providers retry HTTP 429 once, respecting `Retry-After` seconds or HTTP dates up to 30 seconds; retry time is included in measured latency.
 - `api_key_env` is optional in provider configs, so keyless OpenAI-compatible endpoints such as a local Ollama or vLLM server can be benchmarked; no `Authorization` header is sent without it (#16).
 - Providers with failed calls now show the first error message under the leaderboard, and `ProviderSummary` and the JSON/CSV exports gain a `first_error` field (#10).
