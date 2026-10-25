@@ -89,3 +89,93 @@ def test_run_benchmark_handles_provider_failure(monkeypatch) -> None:
     assert bad_res.successful_calls == 0
     assert bad_res.failure_rate == 1.0
     assert bad_res.weighted_score == 0.0
+
+
+def test_run_benchmark_repeats_and_reports_progress_after_failures(monkeypatch) -> None:
+    import modelmeter.runner as runner_mod
+
+    responses = {
+        "mixed": [
+            ProviderResponse(
+                text="4", input_tokens=10, output_tokens=5, latency_ms=100
+            ),
+            ConnectionError("first outage"),
+            ProviderResponse(
+                text="wrong", input_tokens=20, output_tokens=10, latency_ms=300
+            ),
+            TimeoutError("later timeout"),
+        ],
+        "healthy": [
+            ProviderResponse(text="4", input_tokens=1, output_tokens=1, latency_ms=50)
+        ]
+        * 4,
+    }
+    prompts = {name: [] for name in responses}
+
+    class ScriptedProvider(BaseProvider):
+        def __init__(self, config: ProviderConfig) -> None:
+            super().__init__(config)
+            self.name = config.name
+            self.responses = iter(responses[self.name])
+
+        def execute(self, prompt: str) -> ProviderResponse:
+            prompts[self.name].append(prompt)
+            response = next(self.responses)
+            if isinstance(response, Exception):
+                raise response
+            return response
+
+    monkeypatch.setattr(runner_mod, "get_provider_adapter", ScriptedProvider)
+    config = BenchmarkConfig(
+        providers=[
+            ProviderConfig(
+                name=name,
+                base_url="https://api.example.com",
+                model="m",
+                input_cost_per_1m=1.0,
+                output_cost_per_1m=2.0,
+            )
+            for name in responses
+        ],
+        dataset="unused.jsonl",
+        repeats=2,
+        weights=Weights(quality=1.0, latency=0.0, cost=0.0),
+    )
+    tasks = [
+        Task(id="t1", prompt="2+2?", expected="4"),
+        Task(id="t2", prompt="2*2?", expected="4"),
+    ]
+    progress = []
+
+    results = run_benchmark(
+        config, tasks, on_progress=lambda *event: progress.append(event)
+    )
+
+    assert prompts == {name: ["2+2?", "2*2?", "2+2?", "2*2?"] for name in responses}
+    assert progress == [
+        (name, completed, 4)
+        for name in ("mixed", "healthy")
+        for completed in range(1, 5)
+    ]
+    assert [result.provider_name for result in results] == ["healthy", "mixed"]
+    healthy, mixed = results
+    assert mixed.total_calls == 4
+    assert mixed.successful_calls == 2
+    assert mixed.failure_rate == 0.5
+    assert mixed.first_error == "first outage"
+    assert mixed.avg_quality == 0.25
+    assert mixed.p50_latency_ms == 200.0
+    assert mixed.p95_latency_ms == 290.0
+    assert mixed.total_input_tokens == 30
+    assert mixed.total_output_tokens == 15
+    assert mixed.total_tokens == 45
+    assert mixed.total_cost == pytest.approx(0.00006)
+    assert mixed.cost_per_test == pytest.approx(0.000015)
+    assert mixed.weighted_score == 12.5
+    assert healthy.total_calls == healthy.successful_calls == 4
+    assert healthy.failure_rate == 0.0
+    assert healthy.first_error is None
+    assert healthy.total_tokens == 8
+    assert healthy.total_cost == pytest.approx(0.000012)
+    assert healthy.cost_per_test == pytest.approx(0.000003)
+    assert healthy.weighted_score == 100.0
