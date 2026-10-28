@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Providers with failed calls now show the first error message under the leaderboard, and `ProviderSummary` and the JSON/CSV exports gain a `first_error` field (#10).
 
 ### Fixed
+- Task datasets are split on `\n` only, so a prompt containing U+2028, U+0085 or similar characters loads instead of failing with `invalid JSON`, and error line numbers match the file (#21).
 - Provider replies without a completion (no `choices`, error payloads with HTTP 200, non-object bodies) are now recorded as failed calls with the provider's message, instead of successful calls with quality 1.0; `"usage": null` is treated as missing (#14).
 - `modelmeter run` checks `--json`/`--csv` paths before calling any provider and reports an unwritable export path as a one-line error with exit code 1, instead of a traceback after the benchmark has finished (#12).
 - Benchmark configs with duplicate provider names and datasets with duplicate task ids are now rejected with a clear error instead of producing ambiguous results (#8).
