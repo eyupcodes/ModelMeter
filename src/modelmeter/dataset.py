@@ -23,7 +23,9 @@ def load_tasks(path: Path) -> list[Task]:
     text = path.read_text(encoding="utf-8")
     tasks: list[Task] = []
     first_seen: dict[str, int] = {}
-    for line_no, line in enumerate(text.splitlines(), start=1):
+    # Not str.splitlines(): it also splits on U+2028 and similar characters,
+    # which JSON allows unescaped inside strings.
+    for line_no, line in enumerate(text.split("\n"), start=1):
         stripped = line.strip()
         if not stripped:
             continue

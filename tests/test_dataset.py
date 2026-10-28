@@ -77,3 +77,25 @@ def test_rejects_duplicate_task_ids(tmp_path) -> None:
     )
     with pytest.raises(ValueError, match=r":4: duplicate task id 't1'.*line 1"):
         load_tasks(path)
+
+
+def test_unicode_line_separators_inside_prompts_do_not_split_lines(tmp_path) -> None:
+    path = tmp_path / "tasks.jsonl"
+    path.write_text(
+        '{"id": "a", "prompt": "one\u2028two\u0085three"}\r\n'
+        '{"id": "b", "prompt": "ok"}\r\n',
+        encoding="utf-8",
+    )
+
+    tasks = load_tasks(path)
+
+    assert [t.id for t in tasks] == ["a", "b"]
+    assert tasks[0].prompt == "one\u2028two\u0085three"
+
+
+def test_error_line_numbers_ignore_unicode_separators(tmp_path) -> None:
+    path = tmp_path / "tasks.jsonl"
+    path.write_text('{"id": "a", "prompt": "x\u2028y"}\nnot json\n', encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"tasks\.jsonl:2: invalid JSON"):
+        load_tasks(path)
