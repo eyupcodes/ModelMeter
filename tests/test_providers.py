@@ -251,3 +251,54 @@ def test_successful_request_does_not_retry_or_sleep(monkeypatch):
     assert adapter.execute("hello").text == "ok"
     assert len(calls) == 1
     assert sleeps == []
+
+
+@pytest.mark.parametrize(
+    "usage",
+    [
+        None,
+        "n/a",
+        {},
+        {"prompt_tokens": None, "completion_tokens": None},
+        {"prompt_tokens": "12", "completion_tokens": True},
+        {"prompt_tokens": -5, "completion_tokens": 1.5},
+    ],
+)
+def test_unusable_usage_counts_become_zero(monkeypatch, usage):
+    def mock_post(self, url, **kwargs):
+        return httpx.Response(
+            status_code=200,
+            request=httpx.Request("POST", url),
+            json={"choices": [{"message": {"content": "ok"}}], "usage": usage},
+        )
+
+    monkeypatch.setattr(httpx.Client, "post", mock_post)
+    cfg = ProviderConfig(
+        name="test", base_url="https://example.com/v1", model="test-model"
+    )
+
+    resp = OpenAICompatibleProvider(cfg).execute("hi")
+
+    assert resp.text == "ok"
+    assert (resp.input_tokens, resp.output_tokens) == (0, 0)
+
+
+def test_valid_usage_counts_are_kept(monkeypatch):
+    def mock_post(self, url, **kwargs):
+        return httpx.Response(
+            status_code=200,
+            request=httpx.Request("POST", url),
+            json={
+                "choices": [{"message": {"content": "ok"}}],
+                "usage": {"prompt_tokens": 12, "completion_tokens": 3},
+            },
+        )
+
+    monkeypatch.setattr(httpx.Client, "post", mock_post)
+    cfg = ProviderConfig(
+        name="test", base_url="https://example.com/v1", model="test-model"
+    )
+
+    resp = OpenAICompatibleProvider(cfg).execute("hi")
+
+    assert (resp.input_tokens, resp.output_tokens) == (12, 3)

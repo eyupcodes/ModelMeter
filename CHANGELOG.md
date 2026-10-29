@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- A `null`, negative or non-integer token count in a provider's `usage` is read as 0 instead of failing an otherwise successful call (#23).
+
 ### Added
 - Regression coverage verifies repeated benchmarks keep accurate progress, failure diagnostics, token costs, and rankings when a provider fails between successful calls.
 - Regression tests now verify exact leaderboard scores for individual and combined metric weights, partial and complete failures, and interpolated p50/p95 latencies.

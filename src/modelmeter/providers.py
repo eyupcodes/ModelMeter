@@ -53,6 +53,14 @@ def _completion_text(data: object, provider_name: str) -> str:
     return message.get("content") or ""
 
 
+def _token_count(usage: object, key: str) -> int:
+    """Return a usage counter, or 0 when it is missing, null or not a count."""
+    value = usage.get(key) if isinstance(usage, dict) else None
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return 0
+    return value
+
+
 def _retry_delay(retry_after: str | None) -> float:
     """Parse Retry-After seconds or an HTTP date, defaulting to one second."""
     if retry_after is None:
@@ -105,14 +113,12 @@ class OpenAICompatibleProvider(BaseProvider):
 
         content = _completion_text(data, self.config.name)
 
-        usage = data.get("usage") or {}
-        in_tokens = usage.get("prompt_tokens", 0)
-        out_tokens = usage.get("completion_tokens", 0)
+        usage = data.get("usage")
 
         return ProviderResponse(
             text=content.strip(),
-            input_tokens=in_tokens,
-            output_tokens=out_tokens,
+            input_tokens=_token_count(usage, "prompt_tokens"),
+            output_tokens=_token_count(usage, "completion_tokens"),
             latency_ms=round(latency_ms, 2),
         )
 
