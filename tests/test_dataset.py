@@ -27,6 +27,13 @@ def test_load_valid_tasks(tmp_path) -> None:
     assert tasks[1].expected is None
 
 
+def test_loads_file_with_utf8_bom(tmp_path) -> None:
+    path = tmp_path / "tasks.jsonl"
+    path.write_bytes(b"\xef\xbb\xbf" + b'{"id": "t1", "prompt": "hi"}\n')
+
+    assert [t.id for t in load_tasks(path)] == ["t1"]
+
+
 def test_skips_blank_lines(tmp_path) -> None:
     path = write_jsonl(
         tmp_path,
