@@ -20,7 +20,8 @@ def load_tasks(path: Path) -> list[Task]:
         ValueError: if any line is not a valid Task or reuses a task id; message
             includes the 1-based line number.
     """
-    text = path.read_text(encoding="utf-8")
+    # utf-8-sig drops the BOM that Excel and Windows editors prepend.
+    text = path.read_text(encoding="utf-8-sig")
     tasks: list[Task] = []
     first_seen: dict[str, int] = {}
     # Not str.splitlines(): it also splits on U+2028 and similar characters,

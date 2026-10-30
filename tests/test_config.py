@@ -75,6 +75,17 @@ def test_load_benchmark_config_roundtrip(tmp_path) -> None:
     assert str(parsed.dataset) == "tasks.jsonl"
 
 
+def test_load_benchmark_config_accepts_utf8_bom(tmp_path) -> None:
+    config_file = tmp_path / "bench.json"
+    body = (
+        '{"providers": [{"name": "a", "base_url": "https://x/v1", "model": "m"}],'
+        ' "dataset": "tasks.jsonl"}'
+    )
+    config_file.write_bytes(b"\xef\xbb\xbf" + body.encode("utf-8"))
+
+    assert load_benchmark_config(config_file).providers[0].name == "a"
+
+
 def test_load_benchmark_config_missing_file(tmp_path) -> None:
     with pytest.raises(FileNotFoundError):
         load_benchmark_config(tmp_path / "nope.json")

@@ -91,5 +91,5 @@ def load_benchmark_config(path: Path) -> BenchmarkConfig:
     """Parse and validate a benchmark config JSON file."""
     import json
 
-    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw = json.loads(path.read_text(encoding="utf-8-sig"))
     return BenchmarkConfig.model_validate(raw)

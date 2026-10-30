@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Task datasets and benchmark configs with a UTF-8 BOM (Excel, Windows editors) now load instead of failing as invalid JSON (#25).
 - A `null`, negative or non-integer token count in a provider's `usage` is read as 0 instead of failing an otherwise successful call (#23).
 
 ### Added
