@@ -106,3 +106,19 @@ def test_error_line_numbers_ignore_unicode_separators(tmp_path) -> None:
 
     with pytest.raises(ValueError, match=r"tasks\.jsonl:2: invalid JSON"):
         load_tasks(path)
+
+
+@pytest.mark.parametrize("blank", ['""', '"  "', '"\\n"'])
+def test_blank_expected_is_rejected_with_line_number(tmp_path, blank) -> None:
+    path = write_jsonl(
+        tmp_path,
+        [
+            '{"id": "t1", "prompt": "p"}',
+            f'{{"id": "t2", "prompt": "p", "expected": {blank}}}',
+        ],
+    )
+
+    with pytest.raises(
+        ValueError, match=r"(?s):2: invalid task: .*expected must not be blank"
+    ):
+        load_tasks(path)

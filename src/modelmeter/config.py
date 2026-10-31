@@ -18,6 +18,14 @@ class Task(BaseModel):
     prompt: str = Field(min_length=1)
     expected: str | None = None
 
+    @field_validator("expected")
+    @classmethod
+    def _expected_not_blank(cls, value: str | None) -> str | None:
+        # A blank string is a substring of every reply and would score 1.0 always.
+        if value is not None and not value.strip():
+            raise ValueError("expected must not be blank; omit it to skip the check")
+        return value
+
 
 class ProviderConfig(BaseModel):
     """Connection + pricing definition for one provider/model pair.
