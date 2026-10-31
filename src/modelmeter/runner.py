@@ -6,6 +6,7 @@ and summary aggregation across all configured models.
 
 from __future__ import annotations
 
+import unicodedata
 from collections.abc import Callable
 
 from modelmeter.config import BenchmarkConfig, Task
@@ -18,16 +19,21 @@ from modelmeter.scoring import (
 )
 
 
+def _normalize(text: str) -> str:
+    return unicodedata.normalize("NFKC", text).strip().casefold()
+
+
 def evaluate_quality(actual: str, expected: str | None) -> float:
     """Deterministic quality evaluation for a single answer.
 
     - If no expected answer is set, return 1.0 (prompt succeeded).
-    - If expected is set, return 1.0 for normalized exact/substring match, else 0.0.
+    - If expected is set, return 1.0 when it appears in the answer after Unicode
+      NFKC normalization and case folding, else 0.0.
     """
     if expected is None:
         return 1.0
-    norm_actual = actual.strip().lower()
-    norm_expected = expected.strip().lower()
+    norm_actual = _normalize(actual)
+    norm_expected = _normalize(expected)
     if norm_expected in norm_actual:
         return 1.0
     return 0.0

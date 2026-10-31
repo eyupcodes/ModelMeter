@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- A blank `expected` in a task dataset is rejected with a line-numbered error instead of scoring every reply as correct (#27).
+- Expected answers are matched after Unicode NFKC normalization and case folding, so composed and decomposed accents (and `ß`/`SS`) no longer count as wrong (#27).
 - Task datasets and benchmark configs with a UTF-8 BOM (Excel, Windows editors) now load instead of failing as invalid JSON (#25).
 - A `null`, negative or non-integer token count in a provider's `usage` is read as 0 instead of failing an otherwise successful call (#23).
 

@@ -128,7 +128,7 @@ Weighted scores are normalized between **0 and 100**:
 
 $$\text{Score} = \left( w_q \cdot \text{Quality} + w_l \cdot \text{SpeedScore} + w_c \cdot \text{CostScore} \right) \times 100 \times (1 - \text{FailureRate})$$
 
-- $\text{Quality}$: Ratio of answers matching the expected target (1.0 if no target specified).
+- $\text{Quality}$: Ratio of answers matching the expected target (1.0 if no target specified). An answer matches when it contains the target after Unicode normalization and case folding; a blank `expected` is rejected.
 - $\text{SpeedScore}$: Relative $p50$ latency ($1 - \frac{p50}{\max(p50)}$).
 - $\text{CostScore}$: Relative cost per test ($1 - \frac{\text{cost}}{\max(\text{cost})}$).
 - $\text{FailureRate}$: Penalizes timeouts and API errors directly.
