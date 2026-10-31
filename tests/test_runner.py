@@ -179,3 +179,12 @@ def test_run_benchmark_repeats_and_reports_progress_after_failures(monkeypatch) 
     assert healthy.total_cost == pytest.approx(0.000012)
     assert healthy.cost_per_test == pytest.approx(0.000003)
     assert healthy.weighted_score == 100.0
+
+
+def test_evaluate_quality_matches_across_unicode_normal_forms() -> None:
+    composed = "café"
+    decomposed = "café"
+    assert evaluate_quality(f"Answer: {decomposed}", composed) == 1.0
+    assert evaluate_quality(f"Answer: {composed}", decomposed) == 1.0
+    assert evaluate_quality("STRASSE", "Straße") == 1.0
+    assert evaluate_quality("cafe", composed) == 0.0
