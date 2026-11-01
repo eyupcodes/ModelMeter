@@ -151,6 +151,61 @@ def test_run_shows_why_calls_failed(tmp_path, monkeypatch) -> None:
     assert "Missing environment variable 'K' [for p1]" in result.output
 
 
+def _patch_provider(monkeypatch, fail: bool) -> None:
+    import modelmeter.runner as runner_mod
+    from modelmeter.providers import BaseProvider, ProviderResponse
+
+    class Provider(BaseProvider):
+        def execute(self, prompt: str) -> ProviderResponse:
+            if fail:
+                raise ValueError("boom")
+            return ProviderResponse(
+                text="4", input_tokens=1, output_tokens=1, latency_ms=1.0
+            )
+
+    monkeypatch.setattr(runner_mod, "get_provider_adapter", lambda cfg: Provider(cfg))
+
+
+def test_run_max_failure_rate_fails_when_calls_failed(tmp_path, monkeypatch) -> None:
+    _patch_provider(monkeypatch, fail=True)
+    (tmp_path / "tasks.jsonl").write_text(
+        '{"id": "t1", "prompt": "2+2?"}\n', encoding="utf-8"
+    )
+    cfg = _write_config(tmp_path)
+
+    result = runner.invoke(
+        app, ["run", "--config", str(cfg), "--max-failure-rate", "0"]
+    )
+
+    assert result.exit_code == 1
+    assert "--max-failure-rate" in result.output
+    assert "p1 (100.0%)" in result.output
+
+
+def test_run_max_failure_rate_passes_when_within_limit(tmp_path, monkeypatch) -> None:
+    _patch_provider(monkeypatch, fail=False)
+    (tmp_path / "tasks.jsonl").write_text(
+        '{"id": "t1", "prompt": "2+2?"}\n', encoding="utf-8"
+    )
+    cfg = _write_config(tmp_path)
+
+    result = runner.invoke(
+        app, ["run", "--config", str(cfg), "--max-failure-rate", "0"]
+    )
+
+    assert result.exit_code == 0
+
+
+def test_run_rejects_out_of_range_max_failure_rate(tmp_path) -> None:
+    cfg = _write_config(tmp_path)
+
+    result = runner.invoke(
+        app, ["run", "--config", str(cfg), "--max-failure-rate", "2"]
+    )
+
+    assert result.exit_code == 2
+
+
 def _write_config(tmp_path, dataset="tasks.jsonl"):
     cfg = tmp_path / "bench.json"
     cfg.write_text(
