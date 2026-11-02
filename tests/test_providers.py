@@ -174,13 +174,14 @@ def test_rate_limit_retries_once_with_retry_after(monkeypatch, retry_after, dela
     monkeypatch.setattr("modelmeter.providers.time.time", lambda: 1445412480.0)
     headers = {} if retry_after is None else {"Retry-After": retry_after}
     adapter, calls, sleeps = _http_sequence(monkeypatch, [429, 200], headers)
-    clock = iter([10.0, 10.0 + delay + 0.25])
+    # first attempt starts, retry starts after the cooldown, reply arrives 0.25 s later
+    clock = iter([10.0, 10.0 + delay, 10.0 + delay + 0.25])
     monkeypatch.setattr("modelmeter.providers.time.perf_counter", lambda: next(clock))
 
     response = adapter.execute("hello")
 
     assert response.text == "ok"
-    assert response.latency_ms == round((delay + 0.25) * 1000.0, 2)
+    assert response.latency_ms == 250.0
     assert len(calls) == 2
     assert calls[0] == calls[1]
     assert sleeps == [delay]
