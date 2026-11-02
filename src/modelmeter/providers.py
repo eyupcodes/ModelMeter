@@ -98,14 +98,17 @@ class OpenAICompatibleProvider(BaseProvider):
             "messages": [{"role": "user", "content": prompt}],
         }
 
-        start_time = time.perf_counter()
         with httpx.Client(timeout=self.config.timeout_seconds) as client:
+            start_time = time.perf_counter()
             resp = client.post(url, json=payload, headers=headers)
             if resp.status_code == 429:
                 delay = _retry_delay(resp.headers.get("Retry-After"))
                 # Do not retry earlier than requested or block on a long cooldown.
                 if delay <= 30.0:
                     time.sleep(delay)
+                    # Latency covers the request that produced the reply, not the
+                    # rejected attempt or the cooldown before it.
+                    start_time = time.perf_counter()
                     resp = client.post(url, json=payload, headers=headers)
             resp.raise_for_status()
             data = resp.json()
