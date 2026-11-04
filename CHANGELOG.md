@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `modelmeter run --max-failure-rate` exits 1 after the leaderboard and exports when a provider's failure rate is above the threshold, so CI can catch bad keys or outages (#29).
 
 ### Fixed
+- A failed call whose exception has no message (such as an httpx timeout) is recorded under the exception type instead of an empty error, so the provider's first error is shown (#33).
 - Reported latency no longer includes the `Retry-After` cooldown and the rejected attempt after an HTTP 429; only the request that produced the reply is timed (#31).
 - A blank `expected` in a task dataset is rejected with a line-numbered error instead of scoring every reply as correct (#27).
 - Expected answers are matched after Unicode NFKC normalization and case folding, so composed and decomposed accents (and `ß`/`SS`) no longer count as wrong (#27).
