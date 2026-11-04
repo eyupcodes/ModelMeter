@@ -103,7 +103,8 @@ def run_benchmark(
                             cost=0.0,
                             quality=0.0,
                             success=False,
-                            error=str(exc),
+                            # Some exceptions (e.g. httpx timeouts) have no message.
+                            error=str(exc) or type(exc).__name__,
                         )
                     )
                 completed_count += 1
