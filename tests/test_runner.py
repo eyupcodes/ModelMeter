@@ -188,3 +188,27 @@ def test_evaluate_quality_matches_across_unicode_normal_forms() -> None:
     assert evaluate_quality(f"Answer: {composed}", decomposed) == 1.0
     assert evaluate_quality("STRASSE", "Straße") == 1.0
     assert evaluate_quality("cafe", composed) == 0.0
+
+
+def test_run_benchmark_names_exception_type_when_message_is_empty(monkeypatch) -> None:
+    import httpx
+
+    import modelmeter.runner as runner_mod
+
+    class TimingOutProvider(BaseProvider):
+        def execute(self, prompt: str) -> ProviderResponse:
+            raise httpx.ReadTimeout("")
+
+    monkeypatch.setattr(runner_mod, "get_provider_adapter", TimingOutProvider)
+    config = BenchmarkConfig(
+        providers=[
+            ProviderConfig(name="slow", base_url="https://api.example.com", model="m")
+        ],
+        dataset="unused.jsonl",
+        weights=Weights(quality=1.0, latency=0.0, cost=0.0),
+    )
+
+    (summary,) = run_benchmark(config, [Task(id="t1", prompt="hi", expected="x")])
+
+    assert summary.failure_rate == 1.0
+    assert summary.first_error == "ReadTimeout"
