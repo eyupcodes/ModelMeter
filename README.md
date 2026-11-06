@@ -131,6 +131,7 @@ $$\text{Score} = \left( w_q \cdot \text{Quality} + w_l \cdot \text{SpeedScore} +
 - $\text{Quality}$: Ratio of answers matching the expected target (1.0 if no target specified). An answer matches when it contains the target after Unicode normalization and case folding; a blank `expected` is rejected.
 - $\text{SpeedScore}$: Relative $p50$ latency ($1 - \frac{p50}{\max(p50)}$).
 - $\text{CostScore}$: Relative cost per test ($1 - \frac{\text{cost}}{\max(\text{cost})}$).
+- When all providers tie on latency (or cost), including a single provider, that metric gives each of them full credit (1.0).
 - $\text{FailureRate}$: Penalizes timeouts and API errors directly.
 
 When calls fail, the CLI lists the first error message of each affected provider under the leaderboard (for example a missing API key or an HTTP 401), and the JSON/CSV exports carry it in the `first_error` column.
