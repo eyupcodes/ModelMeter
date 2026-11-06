@@ -170,3 +170,39 @@ def test_weighted_scores_preserve_first_error() -> None:
     )
 
     assert ranked[0].first_error == "boom"
+
+
+def _summary(name: str, latency: float, cost: float) -> ProviderSummary:
+    return ProviderSummary(
+        provider_name=name,
+        total_calls=1,
+        successful_calls=1,
+        avg_quality=1.0,
+        p50_latency_ms=latency,
+        cost_per_test=cost,
+    )
+
+
+def test_single_provider_gets_full_latency_and_cost_credit() -> None:
+    weights = Weights(quality=0.5, latency=0.25, cost=0.25)
+    [only] = compute_weighted_scores([_summary("a", 100.0, 0.01)], weights)
+    assert only.weighted_score == 100.0
+
+
+def test_tied_latency_and_cost_do_not_penalize_providers() -> None:
+    weights = Weights(quality=0.5, latency=0.25, cost=0.25)
+    ranked = compute_weighted_scores(
+        [_summary("a", 100.0, 0.01), _summary("b", 100.0, 0.01)], weights
+    )
+    assert [s.weighted_score for s in ranked] == [100.0, 100.0]
+
+
+def test_tied_latency_still_ranks_by_cost() -> None:
+    weights = Weights(quality=0.0, latency=0.5, cost=0.5)
+    ranked = compute_weighted_scores(
+        [_summary("pricey", 100.0, 0.02), _summary("cheap", 100.0, 0.01)], weights
+    )
+    assert [(s.provider_name, s.weighted_score) for s in ranked] == [
+        ("cheap", 75.0),
+        ("pricey", 50.0),
+    ]

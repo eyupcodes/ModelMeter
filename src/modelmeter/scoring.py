@@ -113,23 +113,29 @@ def compute_weighted_scores(
     Higher quality -> better (direct)
     Lower latency -> better (inverse relative to max)
     Lower cost -> better (inverse relative to max)
+
+    When every provider has the same latency (or cost), that metric gives each
+    of them full credit instead of zero.
     """
     if not summaries:
         return []
 
     max_p50 = max((s.p50_latency_ms for s in summaries), default=0.0)
+    min_p50 = min((s.p50_latency_ms for s in summaries), default=0.0)
     max_cost = max((s.cost_per_test for s in summaries), default=0.0)
+    min_cost = min((s.cost_per_test for s in summaries), default=0.0)
 
     updated: list[ProviderSummary] = []
     for s in summaries:
         q_score = s.avg_quality  # 0..1
 
-        if max_p50 > 0:
+        # A tie (including a lone provider) means nobody is slower: full credit.
+        if max_p50 > min_p50:
             l_score = max(0.0, 1.0 - (s.p50_latency_ms / max_p50))
         else:
             l_score = 1.0
 
-        if max_cost > 0:
+        if max_cost > min_cost:
             c_score = max(0.0, 1.0 - (s.cost_per_test / max_cost))
         else:
             c_score = 1.0
