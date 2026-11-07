@@ -46,7 +46,7 @@ def print_leaderboard(summaries: list[ProviderSummary]) -> None:
         fail_style = "red" if s.failure_rate > 0 else "dim"
         table.add_row(
             str(idx),
-            s.provider_name,
+            escape(s.provider_name),
             f"{s.weighted_score:.2f}",
             f"{s.avg_quality * 100:.1f}%",
             f"{s.p50_latency_ms:.1f}ms",

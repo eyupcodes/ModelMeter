@@ -277,3 +277,15 @@ def test_run_export_write_error_is_reported(tmp_path, monkeypatch) -> None:
     )
     assert result.exit_code == 1
     assert "cannot write export" in result.output
+
+
+def test_leaderboard_shows_provider_names_verbatim(capsys) -> None:
+    from modelmeter.cli import print_leaderboard
+    from modelmeter.scoring import ProviderSummary
+
+    names = ["gpt[bold red]x", "m[/]odel", "llama[3]-8b"]
+    print_leaderboard([ProviderSummary(provider_name=n) for n in names])
+
+    out = capsys.readouterr().out
+    for name in names:
+        assert name in out
