@@ -115,15 +115,19 @@ def compute_weighted_scores(
     Lower cost -> better (inverse relative to max)
 
     When every provider has the same latency (or cost), that metric gives each
-    of them full credit instead of zero.
+    of them full credit instead of zero. Providers whose every call failed are
+    left out of that comparison (their score is 0 anyway).
     """
     if not summaries:
         return []
 
-    max_p50 = max((s.p50_latency_ms for s in summaries), default=0.0)
-    min_p50 = min((s.p50_latency_ms for s in summaries), default=0.0)
-    max_cost = max((s.cost_per_test for s in summaries), default=0.0)
-    min_cost = min((s.cost_per_test for s in summaries), default=0.0)
+    # Providers with no successful call report 0 latency and cost; they would
+    # drag the minimum to 0 and cost the working providers their tie credit.
+    live = [s for s in summaries if s.successful_calls > 0] or summaries
+    max_p50 = max(s.p50_latency_ms for s in live)
+    min_p50 = min(s.p50_latency_ms for s in live)
+    max_cost = max(s.cost_per_test for s in live)
+    min_cost = min(s.cost_per_test for s in live)
 
     updated: list[ProviderSummary] = []
     for s in summaries:

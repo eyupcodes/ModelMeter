@@ -206,3 +206,26 @@ def test_tied_latency_still_ranks_by_cost() -> None:
         ("cheap", 75.0),
         ("pricey", 50.0),
     ]
+
+
+def _dead(name: str) -> ProviderSummary:
+    return ProviderSummary(
+        provider_name=name, total_calls=2, successful_calls=0, failure_rate=1.0
+    )
+
+
+def test_provider_with_no_successes_does_not_distort_others() -> None:
+    weights = Weights(quality=0.5, latency=0.25, cost=0.25)
+    ranked = compute_weighted_scores(
+        [_summary("ok", 100.0, 0.01), _dead("dead")], weights
+    )
+    assert [(s.provider_name, s.weighted_score) for s in ranked] == [
+        ("ok", 100.0),
+        ("dead", 0.0),
+    ]
+
+
+def test_all_providers_failing_score_zero() -> None:
+    weights = Weights(quality=0.5, latency=0.25, cost=0.25)
+    ranked = compute_weighted_scores([_dead("a"), _dead("b")], weights)
+    assert [s.weighted_score for s in ranked] == [0.0, 0.0]
