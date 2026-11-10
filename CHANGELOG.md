@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `modelmeter run --markdown PATH` exports the leaderboard as a Markdown table in rank order; provider names and error text are escaped so they cannot break the table (#43).
+
 ### Fixed
 - A provider whose every call failed no longer lowers other providers' latency and cost scores; normalization only compares providers with at least one successful call (#41).
 - The leaderboard prints provider names verbatim; names containing square brackets such as `llama[3]` or `m[/]odel` were mangled or raised `MarkupError` after the run, before any export was written (#37).
