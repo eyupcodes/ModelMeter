@@ -17,7 +17,7 @@ from rich.table import Table
 from modelmeter import __version__
 from modelmeter.config import load_benchmark_config
 from modelmeter.dataset import load_tasks
-from modelmeter.export import export_csv, export_json
+from modelmeter.export import export_csv, export_json, export_markdown
 from modelmeter.runner import run_benchmark
 from modelmeter.scoring import ProviderSummary
 
@@ -126,6 +126,10 @@ def run(
     export_csv_path: Annotated[
         Path | None, typer.Option("--csv", help="Path to export results as CSV.")
     ] = None,
+    export_markdown_path: Annotated[
+        Path | None,
+        typer.Option("--markdown", help="Path to export the leaderboard as Markdown."),
+    ] = None,
     max_failure_rate: Annotated[
         float | None,
         typer.Option(
@@ -143,6 +147,7 @@ def run(
 
     _check_export_path(export_json_path)
     _check_export_path(export_csv_path)
+    _check_export_path(export_markdown_path)
 
     try:
         bench_cfg = load_benchmark_config(config)
@@ -190,6 +195,10 @@ def run(
         if export_csv_path:
             export_csv(summaries, export_csv_path)
             console.print(f"[dim]Exported CSV -> {export_csv_path}[/]")
+
+        if export_markdown_path:
+            export_markdown(summaries, export_markdown_path)
+            console.print(f"[dim]Exported Markdown -> {export_markdown_path}[/]")
     except OSError as exc:
         typer.secho(f"error: cannot write export: {exc}", fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc

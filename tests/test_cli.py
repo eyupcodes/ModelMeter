@@ -89,6 +89,7 @@ def test_run_end_to_end_with_exports(tmp_path, monkeypatch) -> None:
 
     out_json = tmp_path / "results.json"
     out_csv = tmp_path / "results.csv"
+    out_md = tmp_path / "results.md"
 
     result = runner.invoke(
         app,
@@ -100,6 +101,8 @@ def test_run_end_to_end_with_exports(tmp_path, monkeypatch) -> None:
             str(out_json),
             "--csv",
             str(out_csv),
+            "--markdown",
+            str(out_md),
         ],
     )
     assert result.exit_code == 0
@@ -107,6 +110,9 @@ def test_run_end_to_end_with_exports(tmp_path, monkeypatch) -> None:
     assert "mock-p1" in result.output
     assert out_json.is_file()
     assert out_csv.is_file()
+    markdown_rows = out_md.read_text(encoding="utf-8").splitlines()
+    assert markdown_rows[0].startswith("| Rank | Provider |")
+    assert markdown_rows[2].startswith("| 1 | mock-p1 |")
 
 
 def test_check_rejects_duplicate_provider_names(tmp_path) -> None:
@@ -258,6 +264,12 @@ def test_run_bad_export_path_fails_before_calling_providers(
     result = runner.invoke(app, ["run", "--config", cfg, "--csv", str(tmp_path)])
     assert result.exit_code == 1
     assert "is a directory" in result.output
+
+    result = runner.invoke(
+        app, ["run", "--config", cfg, "--markdown", str(tmp_path / "nope" / "o.md")]
+    )
+    assert result.exit_code == 1
+    assert "directory does not exist" in result.output
 
 
 def test_run_export_write_error_is_reported(tmp_path, monkeypatch) -> None:
