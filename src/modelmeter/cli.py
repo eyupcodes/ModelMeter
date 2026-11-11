@@ -15,7 +15,7 @@ from rich.markup import escape
 from rich.table import Table
 
 from modelmeter import __version__
-from modelmeter.config import load_benchmark_config
+from modelmeter.config import BenchmarkConfig, Task, load_benchmark_config
 from modelmeter.dataset import load_tasks
 from modelmeter.export import export_csv, export_json, export_markdown
 from modelmeter.runner import run_benchmark
@@ -74,6 +74,33 @@ def print_failure_reasons(summaries: list[ProviderSummary]) -> None:
         )
 
 
+def _load_dataset(config: Path, bench_cfg: BenchmarkConfig) -> list[Task]:
+    """Load the dataset named by ``bench_cfg``, resolved relative to the config file.
+
+    Exits with an error message when the file is missing, invalid or empty.
+    """
+    dataset_path = bench_cfg.dataset
+    if not dataset_path.is_absolute():
+        dataset_path = config.parent / dataset_path
+
+    if not dataset_path.is_file():
+        typer.secho(
+            f"error: dataset file not found: {dataset_path}", fg=typer.colors.RED
+        )
+        raise typer.Exit(code=1)
+
+    try:
+        tasks = load_tasks(dataset_path)
+    except Exception as exc:  # noqa: BLE001 - CLI boundary reports all load errors
+        typer.secho(f"error: failed loading dataset: {exc}", fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+
+    if not tasks:
+        typer.secho("error: dataset is empty", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+    return tasks
+
+
 @app.command()
 def version() -> None:
     """Print the installed version."""
@@ -95,8 +122,9 @@ def check(
     except Exception as exc:  # noqa: BLE001 - CLI boundary reports all parse errors
         typer.secho(f"error: invalid config: {exc}", fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
+    tasks = _load_dataset(config, parsed)
     typer.echo(
-        f"ok: {len(parsed.providers)} provider(s), "
+        f"ok: {len(parsed.providers)} provider(s), {len(tasks)} task(s), "
         f"repeats={parsed.repeats}, dataset={parsed.dataset}"
     )
 
@@ -155,26 +183,7 @@ def run(
         typer.secho(f"error: invalid config: {exc}", fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
 
-    # Resolve dataset relative to config file if not absolute
-    dataset_path = bench_cfg.dataset
-    if not dataset_path.is_absolute():
-        dataset_path = config.parent / dataset_path
-
-    if not dataset_path.is_file():
-        typer.secho(
-            f"error: dataset file not found: {dataset_path}", fg=typer.colors.RED
-        )
-        raise typer.Exit(code=1)
-
-    try:
-        tasks = load_tasks(dataset_path)
-    except Exception as exc:  # noqa: BLE001
-        typer.secho(f"error: failed loading dataset: {exc}", fg=typer.colors.RED)
-        raise typer.Exit(code=1) from exc
-
-    if not tasks:
-        typer.secho("error: dataset is empty", fg=typer.colors.RED)
-        raise typer.Exit(code=1)
+    tasks = _load_dataset(config, bench_cfg)
 
     console.print(
         f"[cyan]Starting benchmark:[/] {len(bench_cfg.providers)} provider(s), "
