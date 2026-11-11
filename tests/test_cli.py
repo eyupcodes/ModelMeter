@@ -301,3 +301,44 @@ def test_leaderboard_shows_provider_names_verbatim(capsys) -> None:
     out = capsys.readouterr().out
     for name in names:
         assert name in out
+
+
+_PROVIDER = '{"name": "p1", "base_url": "http://x", "model": "m", "api_key_env": "K"}'
+
+
+def _write_config(tmp_path, dataset: str = "tasks.jsonl"):
+    cfg = tmp_path / "bench.json"
+    cfg.write_text(
+        f'{{"providers": [{_PROVIDER}], "dataset": "{dataset}"}}', encoding="utf-8"
+    )
+    return cfg
+
+
+def test_check_reports_task_count(tmp_path) -> None:
+    (tmp_path / "tasks.jsonl").write_text(
+        '{"id": "a", "prompt": "hi"}\n{"id": "b", "prompt": "yo"}\n',
+        encoding="utf-8",
+    )
+    result = runner.invoke(app, ["check", "--config", str(_write_config(tmp_path))])
+    assert result.exit_code == 0
+    assert "2 task(s)" in result.output
+
+
+def test_check_fails_on_missing_dataset(tmp_path) -> None:
+    result = runner.invoke(app, ["check", "--config", str(_write_config(tmp_path))])
+    assert result.exit_code == 1
+    assert "dataset file not found" in result.output.lower()
+
+
+def test_check_fails_on_invalid_dataset(tmp_path) -> None:
+    (tmp_path / "tasks.jsonl").write_text("not json\n", encoding="utf-8")
+    result = runner.invoke(app, ["check", "--config", str(_write_config(tmp_path))])
+    assert result.exit_code == 1
+    assert "failed loading dataset" in result.output.lower()
+
+
+def test_check_fails_on_empty_dataset(tmp_path) -> None:
+    (tmp_path / "tasks.jsonl").write_text("\n", encoding="utf-8")
+    result = runner.invoke(app, ["check", "--config", str(_write_config(tmp_path))])
+    assert result.exit_code == 1
+    assert "dataset is empty" in result.output.lower()
