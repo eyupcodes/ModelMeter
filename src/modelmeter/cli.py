@@ -6,6 +6,7 @@ Core logic lives in the package modules it calls.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Annotated
 
@@ -101,6 +102,19 @@ def _load_dataset(config: Path, bench_cfg: BenchmarkConfig) -> list[Task]:
     return tasks
 
 
+def _warn_missing_api_keys(bench_cfg: BenchmarkConfig) -> None:
+    """Warn (stderr, exit code unchanged) about providers whose key variable is unset."""
+    for provider in bench_cfg.providers:
+        env = provider.api_key_env
+        if env is not None and not os.environ.get(env):
+            typer.secho(
+                f"warning: provider {provider.name!r}: environment variable {env} "
+                "is not set; every call will fail",
+                fg=typer.colors.YELLOW,
+                err=True,
+            )
+
+
 @app.command()
 def version() -> None:
     """Print the installed version."""
@@ -123,6 +137,7 @@ def check(
         typer.secho(f"error: invalid config: {exc}", fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
     tasks = _load_dataset(config, parsed)
+    _warn_missing_api_keys(parsed)
     typer.echo(
         f"ok: {len(parsed.providers)} provider(s), {len(tasks)} task(s), "
         f"repeats={parsed.repeats}, dataset={parsed.dataset}"
@@ -184,6 +199,7 @@ def run(
         raise typer.Exit(code=1) from exc
 
     tasks = _load_dataset(config, bench_cfg)
+    _warn_missing_api_keys(bench_cfg)
 
     console.print(
         f"[cyan]Starting benchmark:[/] {len(bench_cfg.providers)} provider(s), "

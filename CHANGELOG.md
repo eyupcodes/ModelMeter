@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `modelmeter check` and `modelmeter run` warn on stderr when a provider's `api_key_env` variable is unset or empty, instead of letting every call of that provider fail silently into the failure table; exit codes are unchanged (#47).
 - `modelmeter run --markdown PATH` exports the leaderboard as a Markdown table in rank order; provider names and error text are escaped so they cannot break the table (#43).
 
 ### Fixed
