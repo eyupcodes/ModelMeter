@@ -146,7 +146,7 @@ HTTP 429 (rate limit) responses are retried once. ModelMeter waits for `Retry-Af
 |---|---|
 | `modelmeter --help` | Show available options and commands |
 | `modelmeter version` | Print installed version |
-| `modelmeter check --config <file>` | Validate benchmark configuration and dataset path |
+| `modelmeter check --config <file>` | Validate benchmark configuration and dataset path; warns if a provider's `api_key_env` variable is unset |
 | `modelmeter run --config <file>` | Run benchmark and render Rich leaderboard table |
 | `modelmeter run --config <file> --json <out.json>` | Export full results to JSON |
 | `modelmeter run --config <file> --csv <out.csv>` | Export summary table to CSV |
