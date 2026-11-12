@@ -342,3 +342,27 @@ def test_check_fails_on_empty_dataset(tmp_path) -> None:
     result = runner.invoke(app, ["check", "--config", str(_write_config(tmp_path))])
     assert result.exit_code == 1
     assert "dataset is empty" in result.output.lower()
+
+
+def test_check_warns_about_unset_api_key_variable(tmp_path, monkeypatch) -> None:
+    (tmp_path / "tasks.jsonl").write_text('{"id": "a", "prompt": "hi"}\n', "utf-8")
+    monkeypatch.delenv("K", raising=False)
+    result = runner.invoke(app, ["check", "--config", str(_write_config(tmp_path))])
+    assert result.exit_code == 0
+    assert "warning: provider 'p1': environment variable K is not set" in result.output
+
+
+def test_check_is_quiet_when_api_key_variable_is_set(tmp_path, monkeypatch) -> None:
+    (tmp_path / "tasks.jsonl").write_text('{"id": "a", "prompt": "hi"}\n', "utf-8")
+    monkeypatch.setenv("K", "secret")
+    result = runner.invoke(app, ["check", "--config", str(_write_config(tmp_path))])
+    assert result.exit_code == 0
+    assert "warning" not in result.output
+
+
+def test_run_warns_about_unset_api_key_variable(tmp_path, monkeypatch) -> None:
+    (tmp_path / "tasks.jsonl").write_text('{"id": "a", "prompt": "hi"}\n', "utf-8")
+    monkeypatch.delenv("K", raising=False)
+    result = runner.invoke(app, ["run", "--config", str(_write_config(tmp_path))])
+    assert "warning: provider 'p1': environment variable K is not set" in result.output
+    assert "Failures" in result.output  # the run still proceeds and reports failures
