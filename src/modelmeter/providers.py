@@ -50,7 +50,22 @@ def _completion_text(data: object, provider_name: str) -> str:
             detail = f": {data['error'].get('message', data['error'])}"
         raise ValueError(f"Provider {provider_name!r} returned no completion{detail}")
     message = choices[0].get("message") or {}
-    return message.get("content") or ""
+    content = message.get("content")
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        # Some servers return typed parts: [{"type": "text", "text": "..."}].
+        return "".join(
+            part["text"]
+            for part in content
+            if isinstance(part, dict) and isinstance(part.get("text"), str)
+        )
+    raise ValueError(
+        f"Provider {provider_name!r} returned unsupported message content "
+        f"of type {type(content).__name__}"
+    )
 
 
 def _token_count(usage: object, key: str) -> int:
