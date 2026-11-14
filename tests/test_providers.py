@@ -107,6 +107,24 @@ def test_null_usage_and_content_are_tolerated(monkeypatch) -> None:
     assert resp.input_tokens == resp.output_tokens == 0
 
 
+def test_list_content_parts_are_joined(monkeypatch) -> None:
+    parts = [
+        {"type": "text", "text": "Hello, "},
+        {"type": "image_url", "image_url": {"url": "x"}},
+        "ignored",
+        {"type": "text", "text": "world"},
+    ]
+    body = {"choices": [{"message": {"content": parts}}]}
+    assert _provider(monkeypatch, body).execute("hi").text == "Hello, world"
+
+
+@pytest.mark.parametrize("content", [42, {"text": "x"}, True])
+def test_unsupported_content_type_raises_clear_error(monkeypatch, content) -> None:
+    body = {"choices": [{"message": {"content": content}}]}
+    with pytest.raises(ValueError, match="unsupported message content"):
+        _provider(monkeypatch, body).execute("hi")
+
+
 def test_provider_without_api_key_env_sends_no_authorization(monkeypatch) -> None:
     cfg = ProviderConfig(
         name="ollama",

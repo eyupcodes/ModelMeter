@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI runs the format, lint, type and test steps on Python 3.11, 3.12 and 3.13; the 3.13 classifier is added (#49).
 
 ### Fixed
+- A reply whose `message.content` is a list of typed parts is joined into text instead of failing with `'list' object has no attribute 'strip'`; other non-string content raises a clear provider error (#51).
 - `modelmeter check` now loads the dataset like `run` does, so a missing, invalid or empty dataset fails the check instead of printing `ok`; the success line reports the task count (#45).
 - A provider whose every call failed no longer lowers other providers' latency and cost scores; normalization only compares providers with at least one successful call (#41).
 - The leaderboard prints provider names verbatim; names containing square brackets such as `llama[3]` or `m[/]odel` were mangled or raised `MarkupError` after the run, before any export was written (#37).
