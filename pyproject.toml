@@ -52,6 +52,7 @@ addopts = "-q"
 
 [tool.mypy]
 python_version = "3.11"
+strict = true
 check_untyped_defs = true
 warn_unused_ignores = true
 plugins = ["pydantic.mypy"]
