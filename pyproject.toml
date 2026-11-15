@@ -50,6 +50,14 @@ packages = ["src/modelmeter"]
 testpaths = ["tests"]
 addopts = "-q"
 
+[tool.coverage.run]
+branch = true
+source = ["modelmeter"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+
 [tool.mypy]
 python_version = "3.11"
 strict = true
