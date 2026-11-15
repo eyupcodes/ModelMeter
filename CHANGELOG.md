@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `modelmeter run --markdown PATH` exports the leaderboard as a Markdown table in rank order; provider names and error text are escaped so they cannot break the table (#43).
 
 ### Changed
+- `mypy` runs in strict mode and CI fails when branch coverage drops below 90% (#53).
 - CI runs the format, lint, type and test steps on Python 3.11, 3.12 and 3.13; the 3.13 classifier is added (#49).
 
 ### Fixed
