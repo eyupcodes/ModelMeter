@@ -152,6 +152,7 @@ HTTP 429 (rate limit) responses are retried once. ModelMeter waits for `Retry-Af
 | `modelmeter run --config <file> --csv <out.csv>` | Export summary table to CSV |
 | `modelmeter run --config <file> --markdown <out.md>` | Export the leaderboard as a Markdown table (PR comments, READMEs, CI summaries) |
 | `modelmeter run --config <file> --max-failure-rate <0..1>` | Exit 1 if any provider's failure rate is above the value (e.g. `0` fails on any failed call) |
+| `modelmeter run --config <file> --min-quality <0..1>` | Exit 1 if any provider's average quality is below the value (e.g. `0.8`), after the leaderboard and exports are written |
 
 ---
 
