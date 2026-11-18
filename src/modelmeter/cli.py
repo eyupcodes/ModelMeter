@@ -182,6 +182,15 @@ def run(
             help="Exit 1 if any provider's failure rate is above this value (0..1).",
         ),
     ] = None,
+    min_quality: Annotated[
+        float | None,
+        typer.Option(
+            "--min-quality",
+            min=0.0,
+            max=1.0,
+            help="Exit 1 if any provider's average quality is below this value (0..1).",
+        ),
+    ] = None,
 ) -> None:
     """Execute a benchmark across all configured providers and show leaderboard."""
     if not config.is_file():
@@ -237,6 +246,18 @@ def run(
             typer.secho(
                 f"error: failure rate above --max-failure-rate "
                 f"{max_failure_rate:g}: {names}",
+                fg=typer.colors.RED,
+            )
+            raise typer.Exit(code=1)
+
+    if min_quality is not None:
+        below = [s for s in summaries if s.avg_quality < min_quality]
+        if below:
+            names = ", ".join(
+                f"{s.provider_name} ({s.avg_quality * 100:.1f}%)" for s in below
+            )
+            typer.secho(
+                f"error: average quality below --min-quality {min_quality:g}: {names}",
                 fg=typer.colors.RED,
             )
             raise typer.Exit(code=1)

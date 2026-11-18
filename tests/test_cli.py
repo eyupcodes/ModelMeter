@@ -212,6 +212,52 @@ def test_run_rejects_out_of_range_max_failure_rate(tmp_path) -> None:
     assert result.exit_code == 2
 
 
+def test_run_min_quality_fails_when_answers_are_wrong(tmp_path, monkeypatch) -> None:
+    _patch_provider(monkeypatch, fail=False)
+    (tmp_path / "tasks.jsonl").write_text(
+        '{"id": "t1", "prompt": "2+2?", "expected": "5"}\n', encoding="utf-8"
+    )
+    cfg = _write_config(tmp_path)
+
+    result = runner.invoke(app, ["run", "--config", str(cfg), "--min-quality", "0.5"])
+
+    assert result.exit_code == 1
+    assert "--min-quality" in result.output
+    assert "p1 (0.0%)" in result.output
+
+
+def test_run_min_quality_passes_at_threshold(tmp_path, monkeypatch) -> None:
+    _patch_provider(monkeypatch, fail=False)
+    (tmp_path / "tasks.jsonl").write_text(
+        '{"id": "t1", "prompt": "2+2?", "expected": "4"}\n', encoding="utf-8"
+    )
+    cfg = _write_config(tmp_path)
+
+    result = runner.invoke(app, ["run", "--config", str(cfg), "--min-quality", "1"])
+
+    assert result.exit_code == 0
+
+
+def test_run_min_quality_fails_when_every_call_failed(tmp_path, monkeypatch) -> None:
+    _patch_provider(monkeypatch, fail=True)
+    (tmp_path / "tasks.jsonl").write_text(
+        '{"id": "t1", "prompt": "2+2?"}\n', encoding="utf-8"
+    )
+    cfg = _write_config(tmp_path)
+
+    result = runner.invoke(app, ["run", "--config", str(cfg), "--min-quality", "0.1"])
+
+    assert result.exit_code == 1
+
+
+def test_run_rejects_out_of_range_min_quality(tmp_path) -> None:
+    cfg = _write_config(tmp_path)
+
+    result = runner.invoke(app, ["run", "--config", str(cfg), "--min-quality", "1.5"])
+
+    assert result.exit_code == 2
+
+
 def _write_config(tmp_path, dataset="tasks.jsonl"):
     cfg = tmp_path / "bench.json"
     cfg.write_text(
