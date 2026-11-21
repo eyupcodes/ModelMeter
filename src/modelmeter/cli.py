@@ -13,6 +13,14 @@ from typing import Annotated
 import typer
 from rich.console import Console
 from rich.markup import escape
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    TaskID,
+    TextColumn,
+    TimeElapsedColumn,
+)
 from rich.table import Table
 
 from modelmeter import __version__
@@ -28,6 +36,9 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 console = Console(width=160)
+# Progress goes to stderr so stdout, exports and piped output stay unchanged.
+# The bar is disabled when stderr is not a terminal (CI logs, redirects).
+err_console = Console(stderr=True)
 
 
 def print_leaderboard(summaries: list[ProviderSummary]) -> None:
@@ -73,6 +84,31 @@ def print_failure_reasons(summaries: list[ProviderSummary]) -> None:
             f"calls failed, first error: {escape(s.first_error or '')}",
             soft_wrap=True,
         )
+
+
+def run_with_progress(
+    bench_cfg: BenchmarkConfig, tasks: list[Task], progress_console: Console
+) -> list[ProviderSummary]:
+    """Run the benchmark and show a per-provider progress bar on ``progress_console``."""
+    with Progress(
+        TextColumn("[bold]{task.fields[provider]}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
+        console=progress_console,
+        transient=True,
+        disable=not progress_console.is_terminal,
+    ) as progress:
+        bars: dict[str, TaskID] = {}
+
+        def on_progress(provider: str, done: int, total: int) -> None:
+            if provider not in bars:
+                bars[provider] = progress.add_task(
+                    "", total=total, provider=escape(provider)
+                )
+            progress.update(bars[provider], completed=done)
+
+        return run_benchmark(bench_cfg, tasks, on_progress=on_progress)
 
 
 def _load_dataset(config: Path, bench_cfg: BenchmarkConfig) -> list[Task]:
@@ -215,7 +251,7 @@ def run(
         f"{len(tasks)} task(s), {bench_cfg.repeats} repeat(s)"
     )
 
-    summaries = run_benchmark(bench_cfg, tasks)
+    summaries = run_with_progress(bench_cfg, tasks, err_console)
 
     console.print()
     print_leaderboard(summaries)

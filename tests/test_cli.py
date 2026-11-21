@@ -321,7 +321,7 @@ def test_run_bad_export_path_fails_before_calling_providers(
 def test_run_export_write_error_is_reported(tmp_path, monkeypatch) -> None:
     import modelmeter.cli as cli_mod
 
-    monkeypatch.setattr(cli_mod, "run_benchmark", lambda cfg, tasks: [])
+    monkeypatch.setattr(cli_mod, "run_benchmark", lambda cfg, tasks, **kwargs: [])
 
     def deny(summaries, path):
         raise PermissionError("denied")
@@ -412,3 +412,53 @@ def test_run_warns_about_unset_api_key_variable(tmp_path, monkeypatch) -> None:
     result = runner.invoke(app, ["run", "--config", str(_write_config(tmp_path))])
     assert "warning: provider 'p1': environment variable K is not set" in result.output
     assert "Failures" in result.output  # the run still proceeds and reports failures
+
+
+def _progress_setup(monkeypatch):
+    import modelmeter.cli as cli_mod
+    from modelmeter.config import BenchmarkConfig, ProviderConfig, Task
+    from modelmeter.providers import BaseProvider, ProviderResponse
+
+    class Echo(BaseProvider):
+        def execute(self, prompt: str) -> ProviderResponse:
+            return ProviderResponse(
+                text="ok", input_tokens=1, output_tokens=1, latency_ms=1.0
+            )
+
+    monkeypatch.setattr("modelmeter.runner.get_provider_adapter", lambda c: Echo(c))
+    config = BenchmarkConfig(
+        providers=[
+            ProviderConfig(name="alpha[x]", base_url="http://x", model="m"),
+            ProviderConfig(name="beta", base_url="http://x", model="m"),
+        ],
+        dataset="tasks.jsonl",
+    )
+    tasks = [Task(id="t1", prompt="p"), Task(id="t2", prompt="q")]
+    return cli_mod, config, tasks
+
+
+def test_run_with_progress_shows_each_provider_on_a_terminal(monkeypatch) -> None:
+    import io
+
+    from rich.console import Console
+
+    cli_mod, config, tasks = _progress_setup(monkeypatch)
+    buf = io.StringIO()
+    console = Console(file=buf, force_terminal=True, width=100)
+    summaries = cli_mod.run_with_progress(config, tasks, console)
+    assert {s.provider_name for s in summaries} == {"alpha[x]", "beta"}
+    assert all(s.total_calls == 2 for s in summaries)
+    assert "alpha[x]" in buf.getvalue()
+    assert "beta" in buf.getvalue()
+
+
+def test_run_with_progress_is_silent_when_not_a_terminal(monkeypatch) -> None:
+    import io
+
+    from rich.console import Console
+
+    cli_mod, config, tasks = _progress_setup(monkeypatch)
+    buf = io.StringIO()
+    console = Console(file=buf, force_terminal=False, width=100)
+    cli_mod.run_with_progress(config, tasks, console)
+    assert buf.getvalue() == ""
