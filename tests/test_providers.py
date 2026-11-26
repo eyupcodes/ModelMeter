@@ -321,3 +321,10 @@ def test_valid_usage_counts_are_kept(monkeypatch):
     resp = OpenAICompatibleProvider(cfg).execute("hi")
 
     assert (resp.input_tokens, resp.output_tokens) == (12, 3)
+
+
+@pytest.mark.parametrize("message", ["hi", ["a"], 3])
+def test_non_object_message_raises_clear_error(monkeypatch, message) -> None:
+    body = {"choices": [{"message": message}]}
+    with pytest.raises(ValueError, match="returned a malformed message"):
+        _provider(monkeypatch, body).execute("hi")

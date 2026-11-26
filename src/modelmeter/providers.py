@@ -50,6 +50,8 @@ def _completion_text(data: object, provider_name: str) -> str:
             detail = f": {data['error'].get('message', data['error'])}"
         raise ValueError(f"Provider {provider_name!r} returned no completion{detail}")
     message = choices[0].get("message") or {}
+    if not isinstance(message, dict):
+        raise ValueError(f"Provider {provider_name!r} returned a malformed message")
     content = message.get("content")
     if content is None:
         return ""
