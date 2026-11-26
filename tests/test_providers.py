@@ -321,3 +321,31 @@ def test_valid_usage_counts_are_kept(monkeypatch):
     resp = OpenAICompatibleProvider(cfg).execute("hi")
 
     assert (resp.input_tokens, resp.output_tokens) == (12, 3)
+
+
+@pytest.mark.parametrize("message", ["hi", ["a"], 3])
+def test_non_object_message_raises_clear_error(monkeypatch, message) -> None:
+    body = {"choices": [{"message": message}]}
+    with pytest.raises(ValueError, match="returned a malformed message"):
+        _provider(monkeypatch, body).execute("hi")
+
+
+def test_non_json_reply_raises_clear_error(monkeypatch) -> None:
+    monkeypatch.setenv("DUMMY_KEY", "secret-token")
+    cfg = ProviderConfig(
+        name="test",
+        base_url="https://api.openai.com/v1",
+        model="gpt-4o",
+        api_key_env="DUMMY_KEY",
+    )
+
+    def mock_post(self, url, **kwargs):
+        return httpx.Response(
+            status_code=200,
+            request=httpx.Request("POST", url),
+            text="<html>Bad gateway</html>",
+        )
+
+    monkeypatch.setattr(httpx.Client, "post", mock_post)
+    with pytest.raises(ValueError, match="returned a non-JSON reply"):
+        OpenAICompatibleProvider(cfg).execute("hi")

@@ -50,6 +50,8 @@ def _completion_text(data: object, provider_name: str) -> str:
             detail = f": {data['error'].get('message', data['error'])}"
         raise ValueError(f"Provider {provider_name!r} returned no completion{detail}")
     message = choices[0].get("message") or {}
+    if not isinstance(message, dict):
+        raise ValueError(f"Provider {provider_name!r} returned a malformed message")
     content = message.get("content")
     if content is None:
         return ""
@@ -126,7 +128,12 @@ class OpenAICompatibleProvider(BaseProvider):
                     start_time = time.perf_counter()
                     resp = client.post(url, json=payload, headers=headers)
             resp.raise_for_status()
-            data = resp.json()
+            try:
+                data = resp.json()
+            except ValueError:
+                raise ValueError(
+                    f"Provider {self.config.name!r} returned a non-JSON reply"
+                ) from None
         latency_ms = (time.perf_counter() - start_time) * 1000.0
 
         content = _completion_text(data, self.config.name)
