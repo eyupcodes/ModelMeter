@@ -111,3 +111,23 @@ def test_provider_api_key_env_is_optional() -> None:
 def test_provider_api_key_env_cannot_be_empty() -> None:
     with pytest.raises(ValueError):
         ProviderConfig(name="p", base_url="http://x/v1", model="m", api_key_env="")
+
+
+@pytest.mark.parametrize(
+    "field", ["input_cost_per_1m", "output_cost_per_1m", "timeout_seconds"]
+)
+@pytest.mark.parametrize("value", [float("inf"), float("-inf"), float("nan")])
+def test_provider_rejects_non_finite_numbers(field: str, value: float) -> None:
+    with pytest.raises(ValidationError, match=field):
+        ProviderConfig(**PROVIDER, **{field: value})
+
+
+def test_load_benchmark_config_rejects_infinity_literal(tmp_path) -> None:
+    config_file = tmp_path / "bench.json"
+    config_file.write_text(
+        '{"providers": [{"name": "p", "base_url": "http://x/v1", "model": "m",'
+        ' "input_cost_per_1m": Infinity}], "dataset": "tasks.jsonl"}',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValidationError, match="input_cost_per_1m"):
+        load_benchmark_config(config_file)
