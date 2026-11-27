@@ -39,9 +39,9 @@ class ProviderConfig(BaseModel):
     base_url: str = Field(min_length=1)
     model: str = Field(min_length=1)
     api_key_env: str | None = Field(default=None, min_length=1)
-    input_cost_per_1m: float = Field(default=0.0, ge=0)
-    output_cost_per_1m: float = Field(default=0.0, ge=0)
-    timeout_seconds: float = Field(default=30.0, gt=0)
+    input_cost_per_1m: float = Field(default=0.0, ge=0, allow_inf_nan=False)
+    output_cost_per_1m: float = Field(default=0.0, ge=0, allow_inf_nan=False)
+    timeout_seconds: float = Field(default=30.0, gt=0, allow_inf_nan=False)
 
     @field_validator("kind")
     @classmethod
